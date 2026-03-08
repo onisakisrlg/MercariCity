@@ -5,6 +5,14 @@ export interface ContributionDay {
   date: string;
   count: number;
   level: 0 | 1 | 2 | 3 | 4;
+  // Mercari specific fields
+  name: string;
+  isOfficial: boolean;
+  goodReviews: number;
+  badReviews: number;
+  bio: string;
+  profileUrl: string;
+  companyInfo?: string;
 }
 
 export interface ContributionData {
@@ -37,33 +45,60 @@ export const generateMockData = (): ContributionData => {
 
   let total = 0;
 
-  // Generate 53 weeks * 7 days = 371 days to cover the full grid
-  for (let i = 0; i < 371; i++) {
+  const PARTNER_COMPANIES = [
+    "乐一番", "Buyee", "bibian", "FROM JAPAN", "Neokyo", "doorzo", "ZenMarket", "JPGOODBUY", "日淘市集", "Sendico", "TOKUKAI", "RITAO CHAN", "越洋购", "docobuy", "Rakutao", "8mart", "Anybuy", "Mydoso", "DEJAPAN／BIDBUY", "Japan Rabbit", "Letao／funbid", "JChere", "GOODY-JAPAN", "janbox", "Remambo", "元気GO", "japantimemall", "Gobuy", "JADEX", "Myday", "worldbridge", "CDJapan", "Kaerumall", "heyco", "InJapan", "精灵集市／エルフ・モール", "madme", "Rkongjian", "J&Y SYSTEM", "徳源株式会社", "小卷毛日本转运", "テールタウン", "BEX", "盒馬", "CBS日本", "EIGI TRADING CO.株式会社", "DORA日本購", "LCT", "普渡", "DK", "JANTO", "SUMO", "北極星日淘", "太古株式会社", "Buy&Ship", "EIKOLINE", "J-Subculture", "Otsukai", "DANKA", "SAZO", "laojin", "一番市集", "株式会社COOLTRACK JAPAN"
+  ];
+
+  // Generate ~2500 days to cover the requested counts (2000 apartments + 400 unfinished + commercial)
+  for (let i = 0; i < 2500; i++) {
     const currentDate = new Date(oneYearAgo);
     currentDate.setDate(oneYearAgo.getDate() + i);
 
-    // Randomize contribution count
-    // Weighted towards 0 to mimic real data
     const rand = Math.random();
     let count = 0;
     let level: 0 | 1 | 2 | 3 | 4 = 0;
 
-    if (rand > 0.7) {
-      count = Math.floor(Math.random() * 5) + 1; // 1-5
-      level = 1;
+    // Determine type for mock data
+    let isOfficial = false;
+    let name = `User_${i}`;
+    let goodReviews = Math.floor(Math.random() * 500);
+    let badReviews = Math.floor(Math.random() * 10);
+    let bio = "这是一个Mercari卖家的个人简介。";
+    let profileUrl = "https://jp.mercari.com/";
+    let companyInfo = "";
+
+    // First 63 are commercial/official
+    if (i < 63) {
+      isOfficial = true;
+      name = PARTNER_COMPANIES[i] || `Official_${i}`;
+      goodReviews = Math.floor(Math.random() * 5000) + 1000;
+      badReviews = Math.floor(Math.random() * 50);
+      bio = `${name} 是Mercari官方认证的代购合作伙伴，提供专业的日本商品代购服务。`;
+      companyInfo = `${name} 国际物流有限公司，成立于2015年，总部位于东京。`;
+      
+      if (name === "乐一番") {
+        profileUrl = "https://jp.mercari.com/user/profile/937988083";
+        goodReviews = 12500; // Example high rating
+        badReviews = 12;
+        bio = "乐一番是您的日本购物好帮手！我们提供转运、代购一站式服务，让您足不出户淘遍日本。";
+      }
+    } else if (i < 463) {
+      // 400 Unfinished (Bad Individual)
+      isOfficial = false;
+      name = `BadSeller_${i}`;
+      goodReviews = Math.floor(Math.random() * 100);
+      badReviews = Math.floor(Math.random() * 200) + 50; // High bad reviews
+      bio = "这个卖家有很多差评，请谨慎交易。";
+    } else {
+      // Rest are Apartments (Individual)
+      isOfficial = false;
+      name = `Seller_${i}`;
+      goodReviews = Math.floor(Math.random() * 1000) + 50;
+      badReviews = Math.floor(Math.random() * 5);
     }
-    if (rand > 0.85) {
-      count = Math.floor(Math.random() * 10) + 5; // 5-15
-      level = 2;
-    }
-    if (rand > 0.95) {
-      count = Math.floor(Math.random() * 20) + 15; // 15-35
-      level = 3;
-    }
-    if (rand > 0.98) {
-      count = Math.floor(Math.random() * 50) + 35; // 35+
-      level = 4;
-    }
+
+    count = goodReviews; // Use good reviews as the "count" for height
+    level = isOfficial ? 4 : (badReviews > 50 ? 2 : 1);
 
     total += count;
 
@@ -72,6 +107,13 @@ export const generateMockData = (): ContributionData => {
       date: currentDate.toISOString().split('T')[0],
       count,
       level,
+      name,
+      isOfficial,
+      goodReviews,
+      badReviews,
+      bio,
+      profileUrl,
+      companyInfo: isOfficial ? companyInfo : undefined
     });
   }
 
