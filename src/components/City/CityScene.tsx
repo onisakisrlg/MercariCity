@@ -59,8 +59,8 @@ const OrbitingBillboard: React.FC<{ name: string; height: number; position: [num
 // Optimized Shader for InstancedMesh
 const BuildingMaterial = shaderMaterial(
   {
-    uColorWindow1: new THREE.Color('#88AAFF'),
-    uColorWindow2: new THREE.Color('#AADDFF'),
+    uColorWindow1: new THREE.Color('#3355ff'), // Blue
+    uColorWindow2: new THREE.Color('#ffffff'), // White
   },
   `
     varying vec2 vUv;
@@ -68,12 +68,14 @@ const BuildingMaterial = shaderMaterial(
     varying float vHeight;
     varying float vSeed;
     varying float vType;
+    varying float vWindowColor;
     varying vec3 vBaseColor;
     varying vec3 vRoofColor;
 
     attribute float aHeight;
     attribute float aSeed;
     attribute float aType;
+    attribute float aWindowColor;
     attribute vec3 aBaseColor;
     attribute vec3 aRoofColor;
 
@@ -83,6 +85,7 @@ const BuildingMaterial = shaderMaterial(
       vHeight = aHeight;
       vSeed = aSeed;
       vType = aType;
+      vWindowColor = aWindowColor;
       vBaseColor = aBaseColor;
       vRoofColor = aRoofColor;
 
@@ -101,6 +104,7 @@ const BuildingMaterial = shaderMaterial(
     varying float vHeight;
     varying float vSeed;
     varying float vType;
+    varying float vWindowColor;
     varying vec3 vBaseColor;
     varying vec3 vRoofColor;
 
@@ -139,8 +143,7 @@ const BuildingMaterial = shaderMaterial(
       if (!isTop && subUv.x > padX && subUv.x < 1.0 - padX && subUv.y > padY && subUv.y < 1.0 - padY) {
          if (vType == 0.0) {
             if (noise > 0.4) {
-               if (noise < 0.7) color = uColorWindow1; 
-               else color = uColorWindow2; 
+               color = (vWindowColor > 0.5) ? uColorWindow2 : uColorWindow1;
             }
          } else if (vType == 1.0) {
             if (noise > 0.2) color = vec3(1.0, 1.0, 1.0);
@@ -212,8 +215,9 @@ export const CityScene: React.FC<CitySceneProps> = ({ data, onHover, selectedId,
       
       const baseColor = type === 1 ? new THREE.Color('#FFD700') : (type === 2 ? CONCRETE_COLOR : BLACK_COLOR);
       const roofColor = type === 1 ? SLEEK_BLACK : CEMENT_GREY;
+      const windowColorValue = day.windowColor === 'white' ? 1.0 : 0.0;
 
-      return { x, z, height, type, baseColor, roofColor, seed: day.goodReviews + x + z, id: day.id, name: day.name };
+      return { x, z, height, type, baseColor, roofColor, seed: day.goodReviews + x + z, id: day.id, name: day.name, windowColorValue };
     });
 
     return { buildingData: calculatedData };
@@ -228,6 +232,7 @@ export const CityScene: React.FC<CitySceneProps> = ({ data, onHover, selectedId,
       const heights = new Float32Array(items.length);
       const seeds = new Float32Array(items.length);
       const types = new Float32Array(items.length);
+      const windowColors = new Float32Array(items.length);
       const baseColors = new Float32Array(items.length * 3);
       const roofColors = new Float32Array(items.length * 3);
 
@@ -237,6 +242,7 @@ export const CityScene: React.FC<CitySceneProps> = ({ data, onHover, selectedId,
         heights[i] = b.height;
         seeds[i] = b.seed;
         types[i] = b.type;
+        windowColors[i] = b.windowColorValue;
         baseColors[i * 3] = b.baseColor.r;
         baseColors[i * 3 + 1] = b.baseColor.g;
         baseColors[i * 3 + 2] = b.baseColor.b;
@@ -249,6 +255,7 @@ export const CityScene: React.FC<CitySceneProps> = ({ data, onHover, selectedId,
       mesh.geometry.setAttribute('aHeight', new THREE.InstancedBufferAttribute(heights, 1));
       mesh.geometry.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seeds, 1));
       mesh.geometry.setAttribute('aType', new THREE.InstancedBufferAttribute(types, 1));
+      mesh.geometry.setAttribute('aWindowColor', new THREE.InstancedBufferAttribute(windowColors, 1));
       mesh.geometry.setAttribute('aBaseColor', new THREE.InstancedBufferAttribute(baseColors, 3));
       mesh.geometry.setAttribute('aRoofColor', new THREE.InstancedBufferAttribute(roofColors, 3));
     };

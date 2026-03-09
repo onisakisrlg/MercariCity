@@ -13,6 +13,7 @@ export interface ContributionDay {
   bio: string;
   profileUrl: string;
   companyInfo?: string;
+  windowColor?: 'blue' | 'white';
 }
 
 export interface ContributionData {
@@ -66,55 +67,70 @@ export const generateMockData = (): ContributionData => {
     let bio = "这是一个Mercari卖家的个人简介。";
     let profileUrl = "https://jp.mercari.com/";
     let companyInfo = "";
+    let windowColor: 'blue' | 'white' = Math.random() > 0.5 ? 'blue' : 'white';
 
-    // First 63 are commercial/official
-    if (i < 63) {
-      isOfficial = true;
-      name = PARTNER_COMPANIES[i] || `Official_${i}`;
-      goodReviews = Math.floor(Math.random() * 5000) + 1000;
-      badReviews = Math.floor(Math.random() * 50);
-      bio = `${name} 是Mercari官方认证的代购合作伙伴，提供专业的日本商品代购服务。`;
-      companyInfo = `${name} 国际物流有限公司，成立于2015年，总部位于东京。`;
-      
-      if (name === "乐一番") {
-        profileUrl = "https://jp.mercari.com/user/profile/937988083";
-        goodReviews = 12500; // Example high rating
-        badReviews = 12;
-        bio = "乐一番是您的日本购物好帮手！我们提供转运、代购一站式服务，让您足不出户淘遍日本。";
-      }
-    } else if (i < 463) {
-      // 400 Unfinished (Bad Individual)
-      isOfficial = false;
-      name = `BadSeller_${i}`;
-      goodReviews = Math.floor(Math.random() * 100);
-      badReviews = Math.floor(Math.random() * 200) + 50; // High bad reviews
-      bio = "这个卖家有很多差评，请谨慎交易。";
-    } else {
-      // Rest are Apartments (Individual)
-      isOfficial = false;
-      name = `Seller_${i}`;
-      goodReviews = Math.floor(Math.random() * 1000) + 50;
-      badReviews = Math.floor(Math.random() * 5);
-    }
-
-    count = goodReviews; // Use good reviews as the "count" for height
-    level = isOfficial ? 4 : (badReviews > 50 ? 2 : 1);
-
-    total += count;
-
+    // We'll assign types later by shuffling, but for now we set properties
+    // based on the intended counts: 63 official, 400 bad, ~2000 regular.
+    // However, to make it easier to shuffle, we can just use a random chance
+    // but keep track of counts to be precise if needed.
+    // Let's use a simpler approach: generate all, then shuffle.
+    
     days.push({
       id: uuidv4(),
       date: currentDate.toISOString().split('T')[0],
-      count,
-      level,
+      count: 0, // placeholder
+      level: 0, // placeholder
       name,
       isOfficial,
       goodReviews,
       badReviews,
       bio,
       profileUrl,
-      companyInfo: isOfficial ? companyInfo : undefined
+      windowColor
     });
+  }
+
+  // Now assign roles and shuffle
+  const indices = Array.from({ length: 2500 }, (_, i) => i);
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+
+  for (let i = 0; i < 2500; i++) {
+    const idx = indices[i];
+    const day = days[idx];
+    
+    if (i < 63) {
+      day.isOfficial = true;
+      day.name = PARTNER_COMPANIES[i] || `Official_${i}`;
+      day.goodReviews = Math.floor(Math.random() * 5000) + 1000;
+      day.badReviews = Math.floor(Math.random() * 50);
+      day.bio = `${day.name} 是Mercari官方认证的代购合作伙伴，提供专业的日本商品代购服务。`;
+      day.companyInfo = `${day.name} 国际物流有限公司，成立于2015年，总部位于东京。`;
+      
+      if (day.name === "乐一番") {
+        day.profileUrl = "https://jp.mercari.com/user/profile/937988083";
+        day.goodReviews = 12500;
+        day.badReviews = 12;
+        day.bio = "乐一番是您的日本购物好帮手！我们提供转运、代购一站式服务，让您足不出户淘遍日本。";
+      }
+    } else if (i < 463) {
+      day.isOfficial = false;
+      day.name = `BadSeller_${i}`;
+      day.goodReviews = Math.floor(Math.random() * 100);
+      day.badReviews = Math.floor(Math.random() * 200) + 50;
+      day.bio = "这个卖家有很多差评，请谨慎交易。";
+    } else {
+      day.isOfficial = false;
+      day.name = `Seller_${i}`;
+      day.goodReviews = Math.floor(Math.random() * 1000) + 50;
+      day.badReviews = Math.floor(Math.random() * 5);
+    }
+
+    day.count = day.goodReviews;
+    day.level = day.isOfficial ? 4 : (day.badReviews > 50 ? 2 : 1);
+    total += day.count;
   }
 
   return { total, days };
